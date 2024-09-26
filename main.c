@@ -1,17 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define MAX_PESSOAS 10
+#include <unistd.h>
 
-//  ----------------------------------
+//  ---------------------------------- ---------------------------------- ----------------------------------
+
+int cadastro(); 
+int login();    
+void formatar_cpf(const char* cpf, char* cpf_formatado);
+int novo_usuario(const char *cpf_formatado);
+int contar_cadastros();
+int conferir_usuario(const char *cpf, const char *senha);
+int menu();     
+int saldo();    
+int file_exists(const char *filename);
+void limparTela();
+
+//declara funcoes antes delas aparecerem p/ nao da erro
+//  ---------------------------------- ---------------------------------- ----------------------------------
+
+int limite = 10; //defini limite de cadastros possiveis
+
+//  ---------------------------------- ---------------------------------- ----------------------------------
 
 void limparTela() {
-  #ifdef _WIN32
-  system("cls");
+  #ifdef _WIN32     //limpa tela win
+    system("cls");
+  #else
+    system("clear"); //limpa tela mac/linux
   #endif
 }
 
-// ----------------------------------
+//  ---------------------------------- ---------------------------------- ----------------------------------
+
+// deixei de usar o formartar cpf, vou usar qnd for printar o cpf só
 
 void formatar_cpf(const char* cpf, char* cpf_formatado) {
   if (strlen(cpf) != 11){
@@ -26,242 +48,291 @@ void formatar_cpf(const char* cpf, char* cpf_formatado) {
     cpf[9],cpf[10]);
 }
 
-//  ----------------------------------
+//  ---------------------------------- ---------------------------------- ----------------------------------
 
-void inicio(){
+void inicio() {
+
 
   int entrada;
 
-  printf("Digite a opção desejada: \n\n");
-  printf("Cadastro = 1\n");
-  printf("Login = 2\n");
-  printf("\nSua opção: ");
+  printf("-----------------------\nBem-vindo...\n-----------------------\n");
+  printf("\nDigite a opcao desejada: \n\n");
+  printf("1- Cadastro\n");
+  printf("2- Login\n");
+  printf("\nSua opcao: ");
   scanf("%d", &entrada);
 
-  if (entrada == 1) {
-      printf("\n\nÁrea de cadastro!\n\n");
+  if (entrada == 1) { //leva p/ cadastro
+      limparTela();
       cadastro();
-  } else if (entrada == 2) {
-      printf("\n\nÁrea de login!\n");
+
+  } else if (entrada == 2) { //leva p/ login
+      limparTela();
       login();
-    } else {
-      printf("\n\nOpção inválida!\n");
-    }
+  } else {
+      printf("\n-----------------------\nOpcao invalida"); //mantem no inicio
+      inicio();
+  }
 }
 
-// ---------------------------------- 
+//  ---------------------------------- ----------------------------------
 
-int cadastro(){
+int cadastro() {
+
+  printf("-----------------------\nArea de cadastro...\n-----------------------\n");
+
 
   char cpf[12];
-  char cpf_formatado[15];
   char senha[10];
 
-  // pedindo o CPF do usuário
-  printf("Digite o seu CPF: ");
+
+
+  int quantidade_usuarios = contar_cadastros();
+  if (quantidade_usuarios >= limite) {  //chama contagem de usuarios, para ver se ainda tem limite de cadastro, se nao ele nem tenta
+    printf("\nLimite de usuarios atingido!");
+    inicio();
+  }
+
+
+  printf("\nDigite o seu CPF (somente numeros): "); //pede cpf
   scanf("%s", cpf);
-  formatar_cpf(cpf, cpf_formatado);
-  if (cpf_formatado[0] == '\0') {
-    printf("O CPF deve conter 11 dígitos!\n");
-    return 0;
+
+  if (strlen(cpf) != 11) { //verifica se cpf inserido possui 11 dig
+    limparTela();
+    printf("O CPF deve conter 11 digitos!\n");
+    cadastro();
   }
 
-  if (novo_usuario(cpf_formatado)){
-    printf("\nUsuário já cadastrado!");
+  if (novo_usuario(cpf)) { //verifica se é novo usuario ou nao
+    limparTela();
+    printf("\nUsuario ja cadastrado!\n\n");
     login();
-    return 0;
-    
-  }else{
-    novo_usuario();
   }
+
   
-  int quantidade_usuarios = 0;
-  if (quantidade_usuarios >= MAX_PESSOAS){
-    printf("Limite de usuários atingido!");
-    return 0;
-  }
 
-  char novo_arquivo[30];
-  snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuário%d.bin", quantidade_usuarios + 1);
+  char novo_arquivo[30]; //grava novo usuario
+  snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios + 1);
   FILE *fp = fopen(novo_arquivo, "wb");
-  if(!fp){
-    printf("Erro para abrir aqruivo");
+  if (!fp) {
+    printf("Erro para abrir arquivo");
     return 0;
   }
 
-  // pedindo a senha do usuário
-  printf("\nDigite a sua senha: ");
+  printf("\nDigite a sua senha: "); //pede senha
   scanf("%s", senha);
   printf("Sua senha: %s\n", senha);
 
-  // fechando o aquivo
-  fprintf(fp, "CPF: %s\n", cpf_formatado);
+  fprintf(fp, "CPF: %s\n", cpf); // grava e fecha arquivo novo
   fprintf(fp, "Senha: %s\n", senha);
   fclose(fp);
 
-
-
   return 0;
 }
 
-// ----------------------------------
+//  ---------------------------------- ----------------------------------
 
-int login(){
+int login() {
+
   
   char cpf[12];
-  char cpf_formatado[15];
   char senha[10];
-  
-  printf("\n\nDigite o seu CPF: ");
+
+  printf("-----------------------\nTela de login...\n-----------------------\n");
+
+  printf("\n\nDigite o seu CPF: "); //pede cpf
   scanf("%s", cpf);
-  formatar_cpf(cpf, cpf_formatado);
-  if (cpf_formatado[0] == '\0') {
-    printf("O CPF deve conter 11 dígitos!\n");
-    return 0;
+
+  if (strlen(cpf) != 11) { //verifica se cpf inserido tem 11 dig
+    limparTela();
+    printf("O CPF deve conter 11 digitos!\n");
+    login();
   }
 
-  printf("\nDigite a sua senha: ");
+  printf("\nDigite a sua senha: "); //pede senha
   scanf("%s", senha);
 
-  if (conferindo_senha(senha)){
-    printf("\nRedirecionando para o menu!");
-    menu();
+   if (conferir_usuario(cpf, senha)) { //verifica se usuario inserido esta cadastrado
+        limparTela();
+        menu();   //certo -> vai pro menu
+    } else {
+        limparTela();
+        printf("\nCPF ou senha incorretos!\n\n");
+        inicio(); //errado -> volta inicio
+    }
+  
     return 0;
-  }else{
-    printf("Senha incorreta!");
-  }  
 }
 
-// ----------------------------------
+//  ---------------------------------- ----------------------------------
 
-int menu(){
-  
-  int opcao[1];
-  
-  printf("\nDigite a opção desejada: \n");
-  
-  printf("1. Consultar saldo\n");
-  printf("2. Consultar extrato\n");
-  printf("3. Depositar\n");
-  printf("4. Sacar\n");
-  printf("5. Comprar Criptomoeda\n");
-  printf("6. Vender Criptomoeda\n");
-  printf("7. Atualizar cotação\n");
-  printf("8. Sair\n");
+int menu() {
+    int opcao;
+    printf("-----------------------\nMenu...\n-----------------------\n");  //printa opcoes antes do loop pra n ficar repetitivo
 
-  printf("\nDigite a opção desejada: \n");
-  scanf("%d", opcao);
+    printf("1. Consultar saldo\n");
+    printf("2. Consultar extrato\n");
+    printf("3. Depositar\n");
+    printf("4. Sacar\n");
+    printf("5. Comprar Criptomoeda\n");
+    printf("6. Vender Criptomoeda\n");
+    printf("7. Atualizar cotacao\n");
+    printf("8. Sair\n");
+    
+    while (1) {  // loop ate usuario sair
 
-  if (opcao == 1){
-    saldo();
-  }
-  if (opcao == 2){
-    extrato();
-  }
-  if (opcao == 3){
-    depositar();
-  }
-  if (opcao == 4){
-    sacar();
-  }
-  if (opcao == 5){
-    comprar_cripto();
-  }
-  if (opcao == 6){
-    vender_cripto();
-  }
-  if (opcao == 7){
-    cotacao();
-  }
-  if (opcao == 8){
-    sair();
-  }
-}
+        printf("\nDigite a opcao desejada: ");
+        scanf("%d", &opcao);
 
-// ----------------------------------
-
-int saldo(){
-  printf("saldo");
-}
-
-// ----------------------------------
-
-int novo_usuario(const char *cpf_formatado){
-  for (int i = 1; i <= MAX_PESSOAS; i++){
-    char nome_arquivo[20];
-    //armazenando o nome do arquivo no "nome_arquivo", de acordo com o tamanho do mesmo.
-    snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuário%d.bin", i);
-
-    // abrindo o arquivo como leitura
-    if (file_exists(nome_arquivo)){
-      FILE *fp = fopen(nome_arquivo, "rb");
-      char linhas[80];
-
-      //lendo cada linha do arquivo
-      while (fgets(linhas, sizeof(linhas), fp)){
-        // verificando se o cpf esta na linha, se estiver ele interrompe o loop
-        if(strstr(linhas, cpf_formatado) != NULL){
-          fclose(fp);
-          return 1;
+        switch (opcao) {
+            case 1:
+                limparTela();
+                saldo();
+                break;
+            case 2:
+                limparTela();
+                printf("extrato\n");
+                break;
+            case 3:
+                limparTela();
+                printf("depositar\n");
+                break;
+            case 4:
+                limparTela();
+                printf("sacar\n");
+                break;
+            case 5:
+                limparTela();
+                printf("comprar cripto\n");
+                break;
+            case 6:
+                limparTela();
+                printf("vender cripto\n");
+                break;
+            case 7:
+                limparTela();
+                printf("cotacao\n");
+                break;
+            case 8:
+                limparTela();
+                printf("Saindo do menu...\n");
+                inicio();  //  sai do loop e volta inicio
+            default:
+                printf("Opcao invalida!\n");
+                break;
         }
-      }
-      fclose(fp);
+
     }
-  }
-  return 0;
+
+    return 0;
 }
 
-// ----------------------------------
 
-int conferindo_senha(const char *senha){
-  for (int i = 1; i <= MAX_PESSOAS; i++){
-    char nome_arquivo[20];
-    //armazenando o nome do arquivo no "nome_arquivo", de acordo com o tamanho do mesmo.
-    snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuário%d.bin", i);
+//  ---------------------------------- ----------------------------------
 
-    // abrindo o arquivo como leitura
-    if (file_exists(nome_arquivo)){
-      FILE *fp = fopen(nome_arquivo, "rb");
-      char linhas[80];
+int saldo() {
+  printf("saldo\n");
+}
 
-      //lendo cada linha do arquivo
-      while (fgets(linhas, sizeof(linhas), fp)){
-        // verificando se o cpf esta na linha, se estiver ele interrompe o loop
-        if(strstr(linhas, senha) != NULL){
-          fclose(fp);
-          return 1;
+//  ---------------------------------- ----------------------------------
+
+int novo_usuario(const char *cpf) {  // verifica se novo usuario ja existe ou nao
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        // verifica arquivo
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                continue;
+            }
+
+            char linha[80];
+            while (fgets(linha, sizeof(linha), fp)) {
+                // verifica CPF 
+                if (strstr(linha, cpf) != NULL) {
+                    fclose(fp);
+                    printf("cpf encontrado\n");
+                    return 1;  
+                }
+            }
+            fclose(fp);
         }
-      }
-      fclose(fp);
     }
-  }
-  return 0;
+    printf("cpf nao encontrado\n");
+    return 0;  
 }
 
-// ----------------------------------
 
-int file_exists(const char *filename){
+//  ---------------------------------- ----------------------------------
+
+int conferir_usuario(const char *cpf, const char *senha) {  // verifica se usuario no login ta certo ou nao
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                continue;
+            }
+
+            char linha[80];
+            int cpf_encontrado = 0;
+            while (fgets(linha, sizeof(linha), fp)) {
+                if (strstr(linha, cpf) != NULL) {
+                    cpf_encontrado = 1;
+                } else if (cpf_encontrado && strstr(linha, senha) != NULL) {
+                    fclose(fp);
+                    return 1;  // cpf e senha encontrados
+                }
+            }
+            fclose(fp);
+        }
+    }
+    return 0;  // cpf e senha nao encontrados
+}
+//  ---------------------------------- ----------------------------------
+
+int file_exists(const char *filename) {
   FILE *file = fopen(filename, "rb");
-  if(file){
+  if (file) {
     fclose(file);
     return 1;
   }
   return 0;
 }
 
-// ----------------------------------
+//  ---------------------------------- ----------------------------------
 
-int main(){
-  
-  const char *filename = "cadastro.txt";
-  if(file_exists(filename)){
-    printf("O arquivo existe.\n");
-  }else{
-    printf("O arquivo não existe.\n");
+int contar_cadastros() {  // conta se ja esta no limite dew cadastros
+  int count = 0;
+
+  for (int i = 1; i <= limite; i++) {
+    char nome_arquivo[30];
+    snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+    if (file_exists(nome_arquivo)) {
+      count++;
+    }
   }
-  
+  return count;
+}
+
+//  ---------------------------------- ----------------------------------
+
+int main() {
+
+  const char *filename = "cadastro.txt";
+  if (file_exists(filename)) {
+    printf("O arquivo existe.\n");
+  } else {
+    printf("O arquivo nao existe.\n");
+  }
+
+  limparTela();   //limpa tela dps chama inicio
   inicio();
-  limparTela();
   
+
   return 0;
 }
