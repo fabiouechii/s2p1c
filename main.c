@@ -12,14 +12,16 @@ int novo_usuario(const char *cpf_formatado);
 int contar_cadastros();
 int conferir_usuario(const char *cpf, const char *senha);
 int menu();     
-int saldo();    
+int saldo(); 
+int criptocompra();   
 int file_exists(const char *filename);
 void limparTela();
 
 //declara funcoes antes delas aparecerem p/ nao da erro
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
-int limite = 10; //defini limite de cadastros possiveis
+int limite = 10; //define limite de cadastros possiveis
+int estadomenu = 0;
 
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
@@ -127,7 +129,8 @@ int cadastro() {
   fprintf(fp, "Senha: %s\n", senha);
   fclose(fp);
 
-  return 0;
+  limparTela();
+  login();
 }
 
 //  ---------------------------------- ----------------------------------
@@ -154,6 +157,7 @@ int login() {
 
    if (conferir_usuario(cpf, senha)) { //verifica se usuario inserido esta cadastrado
         limparTela();
+        estadomenu=1;
         menu();   //certo -> vai pro menu
     } else {
         limparTela();
@@ -179,7 +183,7 @@ int menu() {
     printf("7. Atualizar cotacao\n");
     printf("8. Sair\n");
     
-    while (1) {  // loop ate usuario sair
+    while (estadomenu ==1) {  // loop ate usuario sair
 
         printf("\nDigite a opcao desejada: ");
         scanf("%d", &opcao);
@@ -203,7 +207,7 @@ int menu() {
                 break;
             case 5:
                 limparTela();
-                printf("comprar cripto\n");
+                criptocompra();
                 break;
             case 6:
                 limparTela();
@@ -215,6 +219,7 @@ int menu() {
                 break;
             case 8:
                 limparTela();
+                estadomenu=0;
                 printf("Saindo do menu...\n");
                 inicio();  //  sai do loop e volta inicio
             default:
@@ -233,6 +238,78 @@ int menu() {
 int saldo() {
   printf("saldo\n");
 }
+//  ---------------------------------- ----------------------------------
+
+int criptocompra(){
+
+int moeda=0;
+int m_if=0;
+int valor;
+
+  printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
+  printf("\nDigite a moeda desejada: \n\n");
+  printf("1- Bitcoin\n");
+  printf("2- Ethereum\n");
+  printf("3- Ripple\n");
+  printf("\nSua opcao: ");
+  scanf("%d", &moeda);
+
+  if ((moeda == 1) || (moeda == 2) || (moeda == 3)) {
+    m_if = 1;
+    printf("foi");
+  }
+  else{
+    limparTela();
+    printf("Digite 1, 2 ou 3\n");
+    criptocompra();
+  }
+
+
+  
+  if (m_if == 1){
+    //puxar cotacao
+    printf("Cotacao:\n");
+    printf("\nValor da compra: ");
+    scanf("%d", &valor);
+    //puxar saldo
+    if (vsaldo >= valor){
+      //calculo de criptos comprada
+      //saldo - valor
+      //salva saldo
+      //salva cripto
+    }
+    else{
+      printf("Saldo Insuficiente");
+    }
+
+
+  }
+
+
+
+
+
+}
+
+
+int consulta_cotacao();
+
+
+
+int verifica_saldo();
+int atualiza_saldo();
+
+
+
+
+
+
+
+
+
+
+//  ---------------------------------- ----------------------------------
+
 
 //  ---------------------------------- ----------------------------------
 
