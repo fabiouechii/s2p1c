@@ -236,11 +236,36 @@ int menu() {
 //  ---------------------------------- ----------------------------------
 
 int saldo() {
-    printf("-----------------------\nÁrea de saldo...\n-----------------------\n");
-    
+  printf("-----------------------\nSaldo...\n-----------------------\n");
+    // Abre o arquivo do usuário logado para ler o saldo
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
 
-    
-    
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                // Se o CPF do usuário logado corresponde, exibe o saldo
+                printf("Saldo em dinheiro: R$ %d\n", usuario.saldo);
+                printf("Saldo em Bitcoin: %.2f BTC\n", usuario.bit);
+                printf("Saldo em Ethereum: %.2f ETH\n", usuario.eth);
+                printf("Saldo em Ripple: %.2f XRP\n", usuario.rip);
+                printf("-----------------------\n");
+                fclose(fp);
+                return 1; // Retorna 1 indicando que a operação foi bem-sucedida
+            }
+            fclose(fp);
+        }
+    }
+    printf("\nErro ao consultar saldo!\n");
+    return 0; // Retorna 0 se não conseguir encontrar o saldo
 }
 
 //  ---------------------------------- ----------------------------------
