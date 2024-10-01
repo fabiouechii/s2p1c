@@ -13,15 +13,21 @@ int contar_cadastros();
 int conferir_usuario(const char *cpf, const char *senha);
 int menu();     
 int saldo(); 
-int criptocompra();   
+int compra();   
 int file_exists(const char *filename);
 void limparTela();
+int deposito();
+int saque();
+int venda();
+int extrato();
+int saldo();
 
 //declara funcoes antes delas aparecerem p/ nao da erro
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
 int limite = 10; //define limite de cadastros possiveis
-int estadomenu = 0;
+int estadomenu = 0; //estado do menu de opcoes
+char cpf_usuario_logado[12]; //cpf salvo dps de login para consulta
 
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
@@ -35,7 +41,7 @@ void limparTela() {
 
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
-// deixei de usar o formartar cpf, vou usar qnd for printar o cpf só
+// usar no extrato
 
 void formatar_cpf(const char* cpf, char* cpf_formatado) {
   if (strlen(cpf) != 11){
@@ -81,57 +87,62 @@ void inicio() {
 
 int cadastro() {
 
-  printf("-----------------------\nArea de cadastro...\n-----------------------\n");
+    printf("-----------------------\nArea de cadastro...\n-----------------------\n");
 
+    char cpf[12];
+    char senha[10];
+    int saldo_inicial = 0;
+    int bit_inicial = 0;
+    int eth_inicial = 0;
+    int rip_inicial = 0;
 
-  char cpf[12];
-  char senha[10];
+    int quantidade_usuarios = contar_cadastros();
+    if (quantidade_usuarios >= limite) {  //chama contagem de usuarios, para ver se ainda tem limite de cadastro, se nao ele nem tenta
+        printf("\nLimite de usuarios atingido!");
+        inicio();
+    }
 
+    printf("\nDigite o seu CPF (somente numeros): "); //pede cpf
+    scanf("%s", cpf);
 
+    if (strlen(cpf) != 11) { //verifica se cpf inserido possui 11 dig
+        limparTela();
+        printf("O CPF deve conter 11 digitos!\n");
+        cadastro();
+    }
 
-  int quantidade_usuarios = contar_cadastros();
-  if (quantidade_usuarios >= limite) {  //chama contagem de usuarios, para ver se ainda tem limite de cadastro, se nao ele nem tenta
-    printf("\nLimite de usuarios atingido!");
-    inicio();
-  }
+    if (novo_usuario(cpf)) {  //verifica se é novo usuario ou nao
+        limparTela();
+        printf("\nUsuario ja cadastrado!\n\n");
+        login();
+    }
 
+    char novo_arquivo[30]; //grava novo usuario
+    snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios + 1);
+    FILE *fp = fopen(novo_arquivo, "wb");
+    if (!fp) {
+        printf("Erro ao abrir o arquivo.");
+        return 0;
+    }
 
-  printf("\nDigite o seu CPF (somente numeros): "); //pede cpf
-  scanf("%s", cpf);
+    printf("\nDigite a sua senha: "); //pede senha
+    scanf("%s", senha);
 
-  if (strlen(cpf) != 11) { //verifica se cpf inserido possui 11 dig
+    //grava informacoes iniciasi
+    fprintf(fp, "CPF: %s\n", cpf);
+    fprintf(fp, "Senha: %s\n", senha);
+    fprintf(fp, "Saldo: %d\n", saldo_inicial);
+    fprintf(fp, "Bit: %d\n", bit_inicial);
+    fprintf(fp, "Eth: %d\n", eth_inicial);
+    fprintf(fp, "Rip: %d\n", rip_inicial);
+
+    fclose(fp);
+
     limparTela();
-    printf("O CPF deve conter 11 digitos!\n");
-    cadastro();
-  }
-
-  if (novo_usuario(cpf)) { //verifica se é novo usuario ou nao
-    limparTela();
-    printf("\nUsuario ja cadastrado!\n\n");
     login();
-  }
-
-  
-
-  char novo_arquivo[30]; //grava novo usuario
-  snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios + 1);
-  FILE *fp = fopen(novo_arquivo, "wb");
-  if (!fp) {
-    printf("Erro para abrir arquivo");
-    return 0;
-  }
-
-  printf("\nDigite a sua senha: "); //pede senha
-  scanf("%s", senha);
-  printf("Sua senha: %s\n", senha);
-
-  fprintf(fp, "CPF: %s\n", cpf); // grava e fecha arquivo novo
-  fprintf(fp, "Senha: %s\n", senha);
-  fclose(fp);
-
-  limparTela();
-  login();
 }
+
+
 
 //  ---------------------------------- ----------------------------------
 
@@ -156,6 +167,7 @@ int login() {
   scanf("%s", senha);
 
    if (conferir_usuario(cpf, senha)) { //verifica se usuario inserido esta cadastrado
+        strcpy(cpf_usuario_logado, cpf); // SALVA cpf LOGADO para verificacao de arquivos
         limparTela();
         estadomenu=1;
         menu();   //certo -> vai pro menu
@@ -195,23 +207,23 @@ int menu() {
                 break;
             case 2:
                 limparTela();
-                printf("extrato\n");
+                extrato();
                 break;
             case 3:
                 limparTela();
-                printf("depositar\n");
+                deposito();
                 break;
             case 4:
                 limparTela();
-                printf("sacar\n");
+                saque();
                 break;
             case 5:
                 limparTela();
-                criptocompra();
+                compra();
                 break;
             case 6:
                 limparTela();
-                printf("vender cripto\n");
+                venda();
                 break;
             case 7:
                 limparTela();
@@ -224,7 +236,7 @@ int menu() {
                 inicio();  //  sai do loop e volta inicio
             default:
                 printf("Opcao invalida!\n");
-                break;
+                menu();
         }
 
     }
@@ -238,66 +250,197 @@ int menu() {
 int saldo() {
   printf("saldo\n");
 }
+
+
 //  ---------------------------------- ----------------------------------
 
-int criptocompra(){
+int deposito() {  
+    printf("-----------------------\nDeposito...\n-----------------------\n");
 
-int moeda=0;
-int m_if=0;
-int valor;
+    int saldo, bit, eth, rip;
+    char senha_arquivo[10];  // senha certa
 
-  printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
-  printf("\nDigite a moeda desejada: \n\n");
-  printf("1- Bitcoin\n");
-  printf("2- Ethereum\n");
-  printf("3- Ripple\n");
-  printf("\nSua opcao: ");
-  scanf("%d", &moeda);
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
 
-  if ((moeda == 1) || (moeda == 2) || (moeda == 3)) {
-    m_if = 1;
-    printf("foi");
-  }
-  else{
-    limparTela();
-    printf("Digite 1, 2 ou 3\n");
-    criptocompra();
-  }
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "r+");
+            if (!fp) {
+                continue;
+            }
 
+            char linha[80];
+            int cpf_encontrado = 0;
+            while (fgets(linha, sizeof(linha), fp)) {
+                if (strstr(linha, cpf_usuario_logado) != NULL) {
+                    cpf_encontrado = 1;
+                    //printf("aqui", cpf_usuario_logado);
+                    fscanf(fp, "CPF: %*s\n");                   // pula cpf
+                    fscanf(fp, "Senha: %s\n", senha_arquivo);   // le senha
+                    fscanf(fp, "Saldo: %d\n", &saldo);          // le saldo
+                    fscanf(fp, "Bit: %d\n", &bit);              // le bit
+                    fscanf(fp, "Eth: %d\n", &eth);              // le eth
+                    fscanf(fp, "Rip: %d\n", &rip);              // le rip
+                    
+                    int deposito;
+                    printf("\nDigite o valor a ser depositado: ");
+                    scanf("%d", &deposito);
+                    saldo += deposito;  // adiciona saldo
 
-  
-  if (m_if == 1){
-    //puxar cotacao
-    printf("Cotacao:\n");
-    printf("\nValor da compra: ");
-    scanf("%d", &valor);
-    //puxar saldo
-    if (vsaldo >= valor){
-      //calculo de criptos comprada
-      //saldo - valor
-      //salva saldo
-      //salva cripto
+                    rewind(fp);
+                    fprintf(fp, "CPF: %s\n", cpf_usuario_logado);  // reescreve cpf
+                    fprintf(fp, "Senha: %s\n", senha_arquivo);     // eescreve a senha
+                    fprintf(fp, "Saldo: %d\n", saldo);             // atualiza saldo
+                    fprintf(fp, "Bit: %d\n", bit);                 // reescreve bit
+                    fprintf(fp, "Eth: %d\n", eth);                 // reescreve eth
+                    fprintf(fp, "Rip: %d\n", rip);                 // reescreve rip
+                    
+                    fclose(fp);  // fehca arquivo
+                    limparTela();
+                    printf("\nDeposito realizado com sucesso!\n");
+                    return 1;
+                } 
+        }
     }
-    else{
-      printf("Saldo Insuficiente");
     }
-
-
-  }
-
-
-
-
-
 }
 
 
-int consulta_cotacao();
 
 
+//  ---------------------------------- ----------------------------------
 
-int verifica_saldo();
-int atualiza_saldo();
+int saque() {  
+    printf("-----------------------\nSaque...\n-----------------------\n");
+
+    int saldo, bit, eth, rip;
+    char senha_arquivo[10];  // senha do arquivo
+    char senha_inserida[10]; // senha inserida
+
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "r+");
+            if (!fp) {
+                continue;
+            }
+
+            char linha[80];
+            int cpf_encontrado = 0;
+            while (fgets(linha, sizeof(linha), fp)) {
+                if (strstr(linha, cpf_usuario_logado) != NULL) {
+                    cpf_encontrado = 1;              
+                    fscanf(fp, "CPF: %*s\n");                   // pula cpf
+                    fscanf(fp, "Senha: %s\n", senha_arquivo);   // le senha
+                    fscanf(fp, "Saldo: %d\n", &saldo);          // le saldo
+                    fscanf(fp, "Bit: %d\n", &bit);              // le bit
+                    fscanf(fp, "Eth: %d\n", &eth);              // le eth
+                    fscanf(fp, "Rip: %d\n", &rip);              // le rip
+                      
+
+                    printf("\nDigite sua senha: ");
+                    scanf("%s", senha_inserida);
+
+                    if (strcmp(senha_inserida, senha_arquivo) != 0) {
+                            fclose(fp);
+                            limparTela();
+                            printf("Senha incorreta! Operacao cancelada.\n");  //senha errada -> reinicia programa
+                            estadomenu = 0;
+                            inicio();
+                            return 0;
+                        }
+
+                        int saque;
+                        printf("\nDigite o valor de saque: ");
+                        scanf("%d", &saque);
+
+                        if (saque > saldo) {
+                            limparTela();
+                            printf("Saldo insuficiente!\n-----------------------\n");
+                            fclose(fp);
+                            return 0;
+                        }
+
+                        saldo -= saque;  // desconta saque do saldo
+
+                        rewind(fp);
+                        fprintf(fp, "CPF: %s\n", cpf_usuario_logado);  // reescreve cpf
+                        fprintf(fp, "Senha: %s\n", senha_arquivo);     // eescreve a senha
+                        fprintf(fp, "Saldo: %d\n", saldo);             // atualiza saldo
+                        fprintf(fp, "Bit: %d\n", bit);                 // reescreve bit
+                        fprintf(fp, "Eth: %d\n", eth);                 // reescreve eth
+                        fprintf(fp, "Rip: %d\n", rip);                 // reescreve rip
+                        
+                        fclose(fp);  //fecha o arquivo
+                        limparTela();
+                        printf("Saque realizado com sucesso!\n");
+                        return 1;
+                }
+              }
+            fclose(fp);
+        }
+    }
+}
+
+//  ---------------------------------- ----------------------------------
+
+int compra() {
+  int moeda=0;
+  int m_if=0;
+  int valor;
+
+    printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
+    printf("\nDigite a moeda desejada: \n\n");
+    printf("1- Bitcoin\n");
+    printf("2- Ethereum\n");
+    printf("3- Ripple\n");
+    printf("\nSua opcao: ");
+    scanf("%d", &moeda);
+
+    if ((moeda == 1) || (moeda == 2) || (moeda == 3)) {
+      m_if = 1;
+      printf("foi");
+    }
+    else{
+      limparTela();
+      printf("Digite 1, 2 ou 3\n");
+      compra();
+    }
+
+
+    
+    //if (m_if == 1){
+      //puxar cotacao
+      //printf("Cotacao:\n");
+      //printf("\nValor da compra: ");
+      //scanf("%d", &valor);
+      //puxar saldo
+      //if (vsaldo >= valor){
+        //calculo de criptos comprada
+        //saldo - valor
+        //salva saldo
+        //salva cripto
+      //}
+      //else{
+      //  printf("Saldo Insuficiente");
+      //}
+
+
+    //}
+}
+
+
+int venda(){
+  printf("venda");
+}
+
+int extrato(){
+  printf("extrato");
+}
+
 
 
 
