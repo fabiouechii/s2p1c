@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stddef.h>
 
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
@@ -12,8 +13,7 @@ int novo_usuario(const char *cpf_formatado);
 int contar_cadastros();
 int conferir_usuario(const char *cpf, const char *senha);
 int menu();     
-int saldo(); 
-int criptocompra();   
+int saldo();    
 int file_exists(const char *filename);
 void limparTela();
 
@@ -111,7 +111,7 @@ int cadastro() {
     login();
   }
 
-  
+
 
   char novo_arquivo[30]; //grava novo usuario
   snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios + 1);
@@ -137,7 +137,7 @@ int cadastro() {
 
 int login() {
 
-  
+
   char cpf[12];
   char senha[10];
 
@@ -164,7 +164,7 @@ int login() {
         printf("\nCPF ou senha incorretos!\n\n");
         inicio(); //errado -> volta inicio
     }
-  
+
     return 0;
 }
 
@@ -182,7 +182,7 @@ int menu() {
     printf("6. Vender Criptomoeda\n");
     printf("7. Atualizar cotacao\n");
     printf("8. Sair\n");
-    
+
     while (estadomenu ==1) {  // loop ate usuario sair
 
         printf("\nDigite a opcao desejada: ");
@@ -199,7 +199,7 @@ int menu() {
                 break;
             case 3:
                 limparTela();
-                printf("depositar\n");
+                depositar();
                 break;
             case 4:
                 limparTela();
@@ -207,7 +207,7 @@ int menu() {
                 break;
             case 5:
                 limparTela();
-                criptocompra();
+                printf("comprar cripto\n");
                 break;
             case 6:
                 limparTela();
@@ -221,7 +221,7 @@ int menu() {
                 limparTela();
                 estadomenu=0;
                 printf("Saindo do menu...\n");
-                inicio();  //  sai do loop e volta inicio
+                login();  //  sai do loop e volta inicio
             default:
                 printf("Opcao invalida!\n");
                 break;
@@ -236,80 +236,68 @@ int menu() {
 //  ---------------------------------- ----------------------------------
 
 int saldo() {
-  printf("saldo\n");
-}
-//  ---------------------------------- ----------------------------------
+    printf("-----------------------\nÁrea de saldo...\n-----------------------\n");
+    
 
-int criptocompra(){
-
-int moeda=0;
-int m_if=0;
-int valor;
-
-  printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
-  printf("\nDigite a moeda desejada: \n\n");
-  printf("1- Bitcoin\n");
-  printf("2- Ethereum\n");
-  printf("3- Ripple\n");
-  printf("\nSua opcao: ");
-  scanf("%d", &moeda);
-
-  if ((moeda == 1) || (moeda == 2) || (moeda == 3)) {
-    m_if = 1;
-    printf("foi");
-  }
-  else{
-    limparTela();
-    printf("Digite 1, 2 ou 3\n");
-    criptocompra();
-  }
-
-
-  
-  if (m_if == 1){
-    //puxar cotacao
-    printf("Cotacao:\n");
-    printf("\nValor da compra: ");
-    scanf("%d", &valor);
-    //puxar saldo
-    if (vsaldo >= valor){
-      //calculo de criptos comprada
-      //saldo - valor
-      //salva saldo
-      //salva cripto
-    }
-    else{
-      printf("Saldo Insuficiente");
-    }
-
-
-  }
-
-
-
-
-
+    
+    
 }
 
-
-int consulta_cotacao();
-
-
-
-int verifica_saldo();
-int atualiza_saldo();
-
-
-
-
-
-
-
-
-
-
 //  ---------------------------------- ----------------------------------
+typedef struct {
+    char cpf;      // CPF (11 dígitos + 1 para '\0')
+    char senha;    // Senha
+    float saldo;       // Saldo
+} Usuario;
 
+int depositar(int quantidade_usuarios) {
+    printf("-----------------------\nÁrea de deposito...\n-----------------------\n");
+
+    float valor;  // Use float para permitir valores decimais
+    printf("\nDigite o valor que deseja depositar: ");
+    scanf("%f", &valor);  // Lê um valor em ponto flutuante
+
+    // Gerando o nome do arquivo dinamicamente
+    char novo_arquivo;
+    snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios);
+
+    // Abrindo o arquivo para leitura e escrita
+    FILE *arquivo = fopen(novo_arquivo, "r+b");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo!\n");
+        return 0;
+    }
+
+    // Lendo o usuário
+    Usuario usuario;
+    size_t result = fread(&usuario, sizeof(Usuario), 1, arquivo);
+    if (result != 1) {
+        printf("Erro ao ler os dados do usuário!\n");
+        fclose(arquivo);
+        return 0;
+    }
+
+    // Atualizando o saldo do usuário
+    usuario.saldo += valor;  // Adiciona o valor depositado ao saldo existente
+
+    // Movendo o ponteiro de volta para o início do arquivo
+    fseek(arquivo, 0, SEEK_SET);
+    // Escrevendo o usuário atualizado de volta no arquivo
+    result = fwrite(&usuario, sizeof(Usuario), 1, arquivo);
+    if (result != 1) {
+        printf("Erro ao gravar os dados do usuário!\n");
+        fclose(arquivo);
+        return 0;
+    }
+
+    // Fechando o arquivo
+    fclose(arquivo);
+
+    printf("\nDepósito no valor de R$%.2f realizado com sucesso!\n", valor);
+    printf("Saldo atualizado: R$%.2f\n", usuario.saldo);
+
+    return 1;
+}
 
 //  ---------------------------------- ----------------------------------
 
@@ -370,6 +358,7 @@ int conferir_usuario(const char *cpf, const char *senha) {  // verifica se usuar
     }
     return 0;  // cpf e senha nao encontrados
 }
+
 //  ---------------------------------- ----------------------------------
 
 int file_exists(const char *filename) {
@@ -409,7 +398,7 @@ int main() {
 
   limparTela();   //limpa tela dps chama inicio
   inicio();
-  
+
 
   return 0;
 }
