@@ -28,5 +28,6 @@ apos terminar a operacao aparecera novamente a pergunta de qual opcao o usuario 
 
 -lista com os nomes e matricula dos participantes do grupo (o projeto pode ser feitos em duplas ou trios)
 
-Fabio Coelho Uechi Martins 52124011-9
+Fabio Coelho Uechi Martins         - 52.124.011-9
+Victor Augusto Montanari Meneguin  - 52.124.004-4
 
