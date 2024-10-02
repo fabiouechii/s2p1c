@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
@@ -29,12 +30,79 @@ typedef struct {
     char cpf[12];
     char senha[10];
     int saldo;
-    int bit;
-    int eth;
-    int rip;
+    float bit;
+    float eth;
+    float rip;
 } Usuario;
 
 //strutura usuario
+
+typedef struct {
+    float bit;  // cot bit
+    float eth;  //cot eth
+    float rip;  //cot rip
+} Cotacao;
+
+
+
+//strutura da cortcao
+//  ---------------------------------- ---------------------------------- ----------------------------------
+
+
+void atualizar() {
+    FILE *fp;
+    Cotacao cotacao;
+    const char *nome_arquivo = "cotacao.bin";
+
+    fp = fopen(nome_arquivo, "rb"); //verifica se existe arquivo
+    if (!fp) {
+        fp = fopen(nome_arquivo, "wb"); //se n existe cria
+        if (!fp) {
+            printf("erro.\n");
+            return;
+        }
+
+        cotacao.bit = 300.0;
+        cotacao.eth = 100;
+        cotacao.rip = 10;    
+
+        fwrite(&cotacao, sizeof(Cotacao), 1, fp);
+        fclose(fp);
+
+        atualizar();
+    }
+
+    fread(&cotacao, sizeof(Cotacao), 1, fp); //se ja existe -> le e atualiza
+    fclose(fp);
+
+    srand(time(NULL));  //gera valor randon
+
+    float variacao_bit = ((rand() % 11) - 5) / 100.0; //variacao entre -5 e 5% 
+    cotacao.bit += cotacao.bit * variacao_bit;//BIT
+
+    float variacao_eth = ((rand() % 11) - 5) / 100.0; //variacao entre -5 e 5% 
+    cotacao.eth += cotacao.eth * variacao_eth;//ETH
+
+    float variacao_rip = ((rand() % 11) - 5) / 100.0; //variacao entre -5 e 5% 
+    cotacao.rip += cotacao.rip * variacao_rip;//rip
+
+
+    printf("-----------------------\nCotaoees atualizadas!\n-----------------------\n");
+
+    printf("\nNovas cotacoes:\n");
+    printf("Bitcoin: %.2f\n", cotacao.bit);
+    printf("Ethereum: %.2f\n", cotacao.eth);
+    printf("Ripple: %.2f\n-----------------------\n", cotacao.rip);
+
+    fp = fopen(nome_arquivo, "wb");
+    if (!fp) {
+        printf("erro\n");
+        return;
+    }
+
+    fwrite(&cotacao, sizeof(Cotacao), 1, fp);
+    fclose(fp);
+}
 //  ---------------------------------- ---------------------------------- ----------------------------------
 
 int limite = 10; //define limite de cadastros possiveis
@@ -232,7 +300,7 @@ int menu() {
                 break;
             case 7:
                 limparTela();
-                printf("cotacao\n");
+                atualizar();
                 break;
             case 8:
                 limparTela();
@@ -253,210 +321,329 @@ int menu() {
 //  ---------------------------------- ----------------------------------
 
 int saldo() {
-  printf("saldo\n");
-}
-
-
-//  ---------------------------------- ----------------------------------
-
-int deposito() {  
-    printf("-----------------------\nDeposito...\n-----------------------\n");
-
-    int saldo, bit, eth, rip;
-    char senha_arquivo[10];  // senha certa
-
+  printf("-----------------------\nSaldo...\n-----------------------\n");
+    // Abre o arquivo do usuário logado para ler o saldo
     for (int i = 1; i <= limite; i++) {
         char nome_arquivo[30];
         snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
 
         if (file_exists(nome_arquivo)) {
-            FILE *fp = fopen(nome_arquivo, "r+");
+            FILE *fp = fopen(nome_arquivo, "rb");
             if (!fp) {
                 continue;
             }
 
-            char linha[80];
-            int cpf_encontrado = 0;
-            while (fgets(linha, sizeof(linha), fp)) {
-                if (strstr(linha, cpf_usuario_logado) != NULL) {
-                    cpf_encontrado = 1;
-                    //printf("aqui", cpf_usuario_logado);
-                    fscanf(fp, "CPF: %*s\n");                   // pula cpf
-                    fscanf(fp, "Senha: %s\n", senha_arquivo);   // le senha
-                    fscanf(fp, "Saldo: %d\n", &saldo);          // le saldo
-                    fscanf(fp, "Bit: %d\n", &bit);              // le bit
-                    fscanf(fp, "Eth: %d\n", &eth);              // le eth
-                    fscanf(fp, "Rip: %d\n", &rip);              // le rip
-                    
-                    int deposito;
-                    printf("\nDigite o valor a ser depositado: ");
-                    scanf("%d", &deposito);
-                    saldo += deposito;  // adiciona saldo
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
 
-                    rewind(fp);
-                    fprintf(fp, "CPF: %s\n", cpf_usuario_logado);  // reescreve cpf
-                    fprintf(fp, "Senha: %s\n", senha_arquivo);     // eescreve a senha
-                    fprintf(fp, "Saldo: %d\n", saldo);             // atualiza saldo
-                    fprintf(fp, "Bit: %d\n", bit);                 // reescreve bit
-                    fprintf(fp, "Eth: %d\n", eth);                 // reescreve eth
-                    fprintf(fp, "Rip: %d\n", rip);                 // reescreve rip
-                    
-                    fclose(fp);  // fehca arquivo
-                    limparTela();
-                    printf("\nDeposito realizado com sucesso!\n");
-                    return 1;
-                } 
-        }
-    }
-    }
-}
-
-
-
-
-//  ---------------------------------- ----------------------------------
-
-int saque() {  
-    printf("-----------------------\nSaque...\n-----------------------\n");
-
-    int saldo, bit, eth, rip;
-    char senha_arquivo[10];  // senha do arquivo
-    char senha_inserida[10]; // senha inserida
-
-    for (int i = 1; i <= limite; i++) {
-        char nome_arquivo[30];
-        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
-
-        if (file_exists(nome_arquivo)) {
-            FILE *fp = fopen(nome_arquivo, "r+");
-            if (!fp) {
-                continue;
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                // Se o CPF do usuário logado corresponde, exibe o saldo
+                printf("Saldo em dinheiro: R$ %d\n", usuario.saldo);
+                printf("Saldo em Bitcoin: %.4f BTC\n", usuario.bit);
+                printf("Saldo em Ethereum: %.4f ETH\n", usuario.eth);
+                printf("Saldo em Ripple: %.4f XRP\n", usuario.rip);
+                printf("-----------------------\n");
+                fclose(fp);
+                return 1; // Retorna 1 indicando que a operação foi bem-sucedida
             }
-
-            char linha[80];
-            int cpf_encontrado = 0;
-            while (fgets(linha, sizeof(linha), fp)) {
-                if (strstr(linha, cpf_usuario_logado) != NULL) {
-                    cpf_encontrado = 1;              
-                    fscanf(fp, "CPF: %*s\n");                   // pula cpf
-                    fscanf(fp, "Senha: %s\n", senha_arquivo);   // le senha
-                    fscanf(fp, "Saldo: %d\n", &saldo);          // le saldo
-                    fscanf(fp, "Bit: %d\n", &bit);              // le bit
-                    fscanf(fp, "Eth: %d\n", &eth);              // le eth
-                    fscanf(fp, "Rip: %d\n", &rip);              // le rip
-                      
-
-                    printf("\nDigite sua senha: ");
-                    scanf("%s", senha_inserida);
-
-                    if (strcmp(senha_inserida, senha_arquivo) != 0) {
-                            fclose(fp);
-                            limparTela();
-                            printf("Senha incorreta! Operacao cancelada.\n");  //senha errada -> reinicia programa
-                            estadomenu = 0;
-                            inicio();
-                            return 0;
-                        }
-
-                        int saque;
-                        printf("\nDigite o valor de saque: ");
-                        scanf("%d", &saque);
-
-                        if (saque > saldo) {
-                            limparTela();
-                            printf("Saldo insuficiente!\n-----------------------\n");
-                            fclose(fp);
-                            return 0;
-                        }
-
-                        saldo -= saque;  // desconta saque do saldo
-
-                        rewind(fp);
-                        fprintf(fp, "CPF: %s\n", cpf_usuario_logado);  // reescreve cpf
-                        fprintf(fp, "Senha: %s\n", senha_arquivo);     // eescreve a senha
-                        fprintf(fp, "Saldo: %d\n", saldo);             // atualiza saldo
-                        fprintf(fp, "Bit: %d\n", bit);                 // reescreve bit
-                        fprintf(fp, "Eth: %d\n", eth);                 // reescreve eth
-                        fprintf(fp, "Rip: %d\n", rip);                 // reescreve rip
-                        
-                        fclose(fp);  //fecha o arquivo
-                        limparTela();
-                        printf("Saque realizado com sucesso!\n");
-                        return 1;
-                }
-              }
             fclose(fp);
         }
     }
+    printf("\nErro ao consultar saldo!\n");
+    return 0; // Retorna 0 se não conseguir encontrar o saldo
+}
+
+
+//  ---------------------------------- ----------------------------------
+
+int deposito() {
+    int valor_deposito;
+    printf("\nDigite o valor que deseja depositar: ");
+    scanf("%d", &valor_deposito);
+
+    for (int i = 1; i <= limite; i++) { //procura arquivo do usuario logado
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb+");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                usuario.saldo += valor_deposito;
+                fseek(fp, 0, SEEK_SET);
+                fwrite(&usuario, sizeof(Usuario), 1, fp);
+                fclose(fp);
+                printf("\nDeposito realizado com sucesso! Saldo atual: %d\n", usuario.saldo);
+                return 1;
+            }
+            fclose(fp);
+        }
+    }
+    printf("\nErro ao realizar o deposito!\n");
+    return 0;
+}
+
+
+
+
+//  ---------------------------------- ----------------------------------
+
+int saque() {
+    int valor_saque;
+    printf("\nDigite o valor que deseja sacar: ");
+    scanf("%d", &valor_saque);
+
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb+"); //abre arquivo
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                if (usuario.saldo >= valor_saque) { //ve se saldo ok
+                    usuario.saldo -= valor_saque; //desconta saque
+                    fseek(fp, 0, SEEK_SET);
+                    fwrite(&usuario, sizeof(Usuario), 1, fp);
+                    fclose(fp);
+                    limparTela();
+                    printf("\nSaque realizado com sucesso! Saldo atual: %d\n", usuario.saldo);
+                    return 1;
+                } else {
+                    fclose(fp);
+                    limparTela();
+                    printf("\nSaldo insuficiente!\n");
+                    saque();
+                }
+            }
+            fclose(fp);
+        }
+    }
+    printf("\nErro\n");
+    return 0;
 }
 
 //  ---------------------------------- ----------------------------------
 
 int compra() {
-  int moeda=0;
-  int m_if=0;
-  int valor;
-  float cot_bit, cot_eth, cot_rip,cotacao;
+    int moeda = 0;
+    int valor;
+    float cotacao;
+    float taxa;
+    Cotacao cotacaoAtual;
+
+    FILE *fp = fopen("cotacao.bin", "rb");
+    if (!fp) {
+        printf("erro\n");
+        return 0;
+    }
+
+    fread(&cotacaoAtual, sizeof(Cotacao), 1, fp); //le cotacoes
+    fclose(fp);
+
+    //printf("Cotacao atual:\n"); 
+    //printf("Bitcoin: %.2f\n", cotacaoAtual.bit);
+    //printf("Ethereum: %.2f\n", cotacaoAtual.eth);
+    //printf("Ripple: %.2f\n", cotacaoAtual.rip);
+
+    printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
+    printf("\nDigite a moeda desejada: \n\n");
+    printf("1- Bitcoin\n");
+    printf("2- Ethereum\n");
+    printf("3- Ripple\n");
+    printf("\nSua opcao: ");
+    scanf("%d", &moeda);
 
 
 
-  FILE *fp = fopen("Cotacao.bin", "r+");
-  fscanf(fp, "Bit: %f\n", &cot_bit);              // le cotacao bit
-  fscanf(fp, "Eth: %f\n", &cot_eth);              // le cotacao eth
-  fscanf(fp, "Rip: %f\n", &cot_rip);              // le cotacao rip
-  
+    if (moeda == 1) { 
+        cotacao = cotacaoAtual.bit;
+        taxa = 0.02;  //2% bitcoin
 
-  printf("-----------------------\nComprar Criptomoeda...\n-----------------------\n");
-  printf("\nDigite a moeda desejada: \n\n");
-  printf("1- Bitcoin\n");
-  printf("2- Ethereum\n");
-  printf("3- Ripple\n");
-  printf("\nSua opcao: ");
-  scanf("%d", &moeda);
-  fclose(fp);
+    } else if (moeda == 2) {
+        cotacao = cotacaoAtual.eth;
+        taxa = 0.01;  //1% eth
 
-  if (moeda == 1){
-    cotacao = cot_bit;
-  }
-  else if(moeda == 2){
-    cotacao = cot_eth;
-  }
-  else if(moeda == 3){
-    cotacao = cot_rip;
-  }
-  else{
+    } else if (moeda == 3) {
+        cotacao = cotacaoAtual.rip;
+        taxa = 0.01;  //1% rip
+
+    } else {
+        limparTela();
+        printf("Digite 1, 2 ou 3\n"); // valor digitado é inválido
+        compra(); // reinicia função
+        return 0; // Não prossegue após chamada recursiva
+    }
+
     limparTela();
-    printf("Digite 1, 2 ou 3\n"); //valor digitado e invalido
-    compra(); //reinicia fucao
-  }
- 
+    printf("\nCotacao: %.2f", cotacao);
+    printf("\nDigite o valor em dinheiro que deseja usar para comprar a criptomoeda: ");
+    scanf("%d", &valor);
 
 
-  printf("Cotacao: %d", cotacao);  
-  printf("\nValor da compra: ");
-  scanf("%d", &valor);
+    for (int i = 1; i <= limite; i++) { //procura saldo
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
 
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb+");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                if (usuario.saldo >= valor) {
+
+                    float quantidade = (valor * (1 - taxa)) / cotacao; //qtd de criptos compradas
+
+                    if (moeda == 1) {
+                        printf("atualiza bit");
+                        usuario.bit += quantidade;  //atualiza bit
+                    } else if (moeda == 2) {
+                        usuario.eth += quantidade;  //atualiza eth
+                    } else if (moeda == 3) {
+                        usuario.rip += quantidade;  //atualiza rip
+                    }
+
+                    printf("desconta saldo");
+                    usuario.saldo -= valor; // Desconta o valor gasto
+
+                    fseek(fp, 0, SEEK_SET);
+                    fwrite(&usuario, sizeof(Usuario), 1, fp);
+                    fclose(fp);
+
+                    //limparTela();
+                    printf("\nCompra realizada com sucesso! Voce comprou %.4f unidades da criptomoeda.\n", quantidade);
+                    return 1;
+
+                } else {
+
+                    fclose(fp);
+                    //limparTela();
+                    printf("\nSaldo insuficiente para a compra!\n");
+                    compra();
+                    return 0;
+                }
+            }
+            fclose(fp);
+        }
+    }
+    printf("\nErro ao realizar a compra!\n");
+    return 0;
 }
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //  ---------------------------------- ----------------------------------
-int venda(){
-  printf("venda");
+
+int venda() {
+    int moeda = 0;
+    float quantidade;
+    float cotacao;
+    float taxa;
+    Cotacao cotacaoAtual;
+
+    FILE *fp = fopen("cotacao.bin", "rb");
+    if (!fp) {
+        printf("erro\n");
+        return 0;
+    }
+
+    fread(&cotacaoAtual, sizeof(Cotacao), 1, fp); // Le cotacoes
+    fclose(fp);
+
+    printf("-----------------------\nVender Criptomoeda...\n-----------------------\n");
+    printf("\nDigite a moeda desejada: \n\n");
+    printf("1- Bitcoin\n");
+    printf("2- Ethereum\n");
+    printf("3- Ripple\n");
+    printf("\nSua opcao: ");
+    scanf("%d", &moeda);
+
+    if (moeda == 1) {
+        cotacao = cotacaoAtual.bit;
+        taxa = 0.02;  //2% de taxa para bitcoin
+    } else if (moeda == 2) {
+        cotacao = cotacaoAtual.eth;
+        taxa = 0.01;  //1% de taxa para ethereum
+    } else if (moeda == 3) {
+        cotacao = cotacaoAtual.rip;
+        taxa = 0.01;  //1% de taxa para ripple
+    } else {
+        limparTela();
+        printf("Digite 1, 2 ou 3\n"); // Valor digitado é inválido
+        venda(); // Reinicia função
+        return 0; // Não prossegue após chamada recursiva
+    }
+
+    limparTela();
+    printf("\nCotacao: %.2f", cotacao);
+    printf("\nDigite a quantidade de criptomoeda que deseja vender: ");
+    scanf("%f", &quantidade);
+
+    for (int i = 1; i <= limite; i++) { // Procura saldo
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb+");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+
+            if (strcmp(usuario.cpf, cpf_usuario_logado) == 0) {
+                float valor_venda = quantidade * cotacao * (1 - taxa);  // Valor recebido pela venda
+
+                if ((moeda == 1 && usuario.bit >= quantidade) || 
+                    (moeda == 2 && usuario.eth >= quantidade) || 
+                    (moeda == 3 && usuario.rip >= quantidade)) {
+
+                    // Atualiza saldo da criptomoeda
+                    if (moeda == 1) {
+                        usuario.bit -= quantidade;  // Remove bitcoins
+                    } else if (moeda == 2) {
+                        usuario.eth -= quantidade;  // Remove ethereum
+                    } else if (moeda == 3) {
+                        usuario.rip -= quantidade;  // Remove ripple
+                    }
+
+                    usuario.saldo += valor_venda;  // Adiciona o valor da venda ao saldo em dinheiro
+
+                    fseek(fp, 0, SEEK_SET);
+                    fwrite(&usuario, sizeof(Usuario), 1, fp);
+                    fclose(fp);
+
+                    printf("\nVenda realizada com sucesso! Voce vendeu %.4f unidades da criptomoeda e recebeu %.2f em dinheiro.\n", quantidade, valor_venda);
+                    return 1;
+                } else {
+                    fclose(fp);
+                    printf("\nQuantidade insuficiente de criptomoedas para realizar a venda!\n");
+                    return 0;
+                }
+            }
+            fclose(fp);
+        }
+    }
+    printf("\nErro ao realizar a venda!\n");
+    return 0;
 }
+
 //  ---------------------------------- ----------------------------------
 int extrato(){
   printf("extrato");
