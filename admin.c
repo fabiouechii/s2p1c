@@ -13,13 +13,17 @@ int estadomenu = 0; //Estado do menu, ativo ou não
 //Declara funções no início
 int menu_admin();
 int login_admin();
-void cadastro_admin();
+int cadastro_admin();
 void excluir_admin();
 void saldo_admin();
 void extrato_admin();
 void cadastrar_cripto();
 void excluir_cripto();
 void atualizar();
+int contar_cadastros();
+int file_exists(const char *filename);
+int novo_usuario(const char *cpf_formatado);
+int contar_cadastros();
 void limparTela() {     //pegar da main, nao fazer dnv !!!!!!
   #ifdef _WIN32     // Limpa a tela para Win
     system("cls");
@@ -31,8 +35,16 @@ void limparTela() {     //pegar da main, nao fazer dnv !!!!!!
 
 //  ----------------------------------------------------------------------------------------------------
 // Estruturas
-//typedef struct {}
+typedef struct {
+    char cpf[12];
+    char senha[10];
+    int saldo;
+    float bit;
+    float eth;
+    float rip;
+} Usuario;
     
+int limite = 10;
 
 
 //  ----------------------------------------------------------------------------------------------------
@@ -130,8 +142,55 @@ int menu_admin() {
 
 
 //  ----------------------------------------------------------------------------------------------------
-void cadastro_admin() {
-    printf("cadastrar investidor");
+int cadastro_admin() {
+    //printf("cadastrar investidor");
+    printf("-----------------------\nArea de cadastro...\n-----------------------\n");
+
+    Usuario usuario;
+
+    int quantidade_usuarios = contar_cadastros();
+    if (quantidade_usuarios >= limite) {  //Teste limite de cadastros
+        printf("\nLimite de usuarios atingido!\n");
+        menu_admin();
+    }
+
+    printf("\nDigite o CPF (somente numeros): "); //Pede CPF
+    scanf("%s", usuario.cpf);
+
+    if (strlen(usuario.cpf) != 11) { //Verifica se CPF tem 11 digitos
+        limparTela();
+        printf("O CPF deve conter 11 digitos!\n");
+        cadastro_admin();
+    }
+
+    if (novo_usuario(usuario.cpf)) {  // Verifica se CPF já cadastrado
+        limparTela();
+        printf("\nUsuario ja cadastrado!\n\n");
+        menu_admin();
+    }
+
+    char novo_arquivo[30];
+    snprintf(novo_arquivo, sizeof(novo_arquivo), "Usuario%d.bin", quantidade_usuarios + 1);
+    FILE *fp = fopen(novo_arquivo, "wb");
+    if (!fp) {
+        printf("Erro ao abrir o arquivo.\n");
+        return 0;
+    }
+
+    printf("\nDigite a senha: "); //Pede senha
+    scanf("%s", usuario.senha);
+
+    usuario.saldo = 0; //Valores iniciais de novo usuário
+    usuario.bit = 0;
+    usuario.eth = 0;
+    usuario.rip = 0;
+
+    fwrite(&usuario, sizeof(Usuario), 1, fp);
+    fclose(fp);
+
+    limparTela();
+    menu_admin();
+    return 1;
 }
 
 void excluir_admin() {
@@ -156,6 +215,83 @@ void excluir_cripto() {
 
 void atualizar() {
     printf("atualizar cotacao");
+}
+
+int novo_usuario(const char *cpf) {  // Verifica se usuario já existe ou não
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        // verifica arquivo
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+            fclose(fp);
+
+            if (strcmp(usuario.cpf, cpf) == 0) {
+                    //printf("CPF encontrado\n");
+                    return 1;
+            }
+        }
+    }
+    //printf("CPF nao encontrado\n");
+    return 0;
+}
+
+
+//  ----------------------------------------------------------------------------------------------------
+int conferir_usuario(const char *cpf, const char *senha) {  // Verifica se usuario no login está OK
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+            fclose(fp);
+
+            if (strcmp(usuario.cpf, cpf) == 0 && strcmp(usuario.senha, senha) == 0) {
+                return 1;  //CPF e senha encontrados
+              }
+        }
+    }
+    return 0; //CPF e senha não encontrados
+}
+
+
+//  ----------------------------------------------------------------------------------------------------
+int file_exists(const char *filename) {
+  FILE *file = fopen(filename, "rb");
+  if (file) {
+    fclose(file);
+    return 1;
+  }
+  return 0;
+}
+
+
+//  ----------------------------------------------------------------------------------------------------
+int contar_cadastros() {  // Verifica se atingiu limite de cadastros
+  int count = 0;
+
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+        if (file_exists(nome_arquivo)) {
+            count++;
+        }
+    }
+    return count;
 }
 
 
