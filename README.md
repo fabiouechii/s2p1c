@@ -1,33 +1,45 @@
-# s2p1c
-
 -obetivo do projeto
 
-criar um banco digital, para compra e venda de criptomoedas, cobrando uma taxa por transacao, tendo funcoes como, atualizacao de cotacao, extrado e saldo, alem do deposito/saque e compra/venda.
-tendo tambem uma tela inicial de cadastro/login com o maximo de 10 contas cadastradas.
+atualizar nosso banco digital, criando o "programa" do admintrador, tendo funcoes como, criar e excluir investidor, verificar extrado e saldo de investidor, alem da exclusao e criacao de novas criptomoedas.
 
 -a forma de compilacao e execucao
 
-gcc main.c
+compliar e executar arquivo main.c (programa do usuario/investidor)
 
-./a.exe   
+gcc -c FUNCOESMAIN.c
+
+gcc FUNCOESMAIN.o main.c -o a.exe
+
+./a.exe
 
 
--uma breve explicacao sobre a forma de uso do programa
+compliar e executar arquivo admin.c(programa do administrdor)
 
-iniciando o programa e aberto uma tela de inicio, dando as opcoes de cadastro ou login.
+gcc -c FUNCOESMAIN.c
 
-acessando area de cadastro, primeiramente sera feito uma verificacao de limite de usuarios, se ainda tiver capacidade pedira o cpf, entao sera verificado se o cpf inserido ja esta cadastrado, se estiver manda para tela de login, caso ainda nao esteja sera perguntado a senha, entao enviado a tela de login
+gcc FUNCOESMAIN.o admin.c -o b.exe
 
-na tela de login o usuario preenche com o cpf e senha cadastrados, se corretos ele acessara a tela de menu.
+./b.exe
 
-na tela de menu aparecera uma vez so as opcoes de 1 a 8, escolhendo a opcao ele executara a funcao correspondente, pedindo as devidas informacoes daquela funcao
 
-para funcoes que precisam de senha, caso ela seja inserida incorretamente o usuario sera desconectado
+-uma breve explicacao sobre a forma de uso do programa (administrador)
 
-apos terminar a operacao aparecera novamente a pergunta de qual opcao o usuario escolhe, mas sem mostrar a lista do menu, para sair e necessario escolher a opcao 8
+iniciando o programa e aberto uma tela de login do administrador (12345678901 e senha: admin123).
+
+após a validacao do login o administrador acessa a tela de menu com as opcoes de 1 a 8.
+
+a funcao cadastrar usuario funciona de forma semelhante a primeira etapa (nao foi implementado a inscricao de um nome ao investidor)
+
+a funcao excluir usuario o adminstrador insere o cpf e entao recebe as informacoes daquele usuario antes de poder confirmar a exclusao
+
+a funcao atualizar executa a mesma funcao utilizada no projeto 1
+
+as outras funcoes nao foram finalizadas a tempo
+
+para sair e necessario escolher a opcao 8
 
 -lista com os nomes e matricula dos participantes do grupo (o projeto pode ser feitos em duplas ou trios)
 
 Fabio Coelho Uechi Martins         - 52.124.011-9
-Victor Augusto Montanari Meneguin  - 52.124.004-4
 
+Victor Augusto Montanari Meneguin  - 52.124.004-4
