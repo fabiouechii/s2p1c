@@ -1,3 +1,4 @@
+#include "FUNCOESMAIN.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +7,7 @@
 #define MAX_USUARIOS 100
 #define MAX_CRIPTOS 50
 
-int estadomenu = 0; //Estado do menu, ativo ou não
+//int estadomenu = 0; //Estado do menu, ativo ou não
 
 
 //  ----------------------------------------------------------------------------------------------------
@@ -19,18 +20,13 @@ void saldo_admin();
 void extrato_admin();
 void cadastrar_cripto();
 void excluir_cripto();
-void atualizar();
-int contar_cadastros();
-int file_exists(const char *filename);
-int novo_usuario(const char *cpf_formatado);
-int contar_cadastros();
-void limparTela() {     //pegar da main, nao fazer dnv !!!!!!
-  #ifdef _WIN32     // Limpa a tela para Win
-    system("cls");
-  #else
-    system("clear"); // Limpa a tela para Mac e Linux
-  #endif
-}
+//void atualizar();
+//int contar_cadastros();
+//int conferir_usuario(const char *cpf, const char *senha);
+//int file_exists(const char *filename);
+//int novo_usuario(const char *cpf_formatado);
+//int contar_cadastros();
+//void limparTela();
 
 
 //  ----------------------------------------------------------------------------------------------------
@@ -44,7 +40,7 @@ typedef struct {
     float rip;
 } Usuario;
     
-int limite = 10;
+
 
 
 //  ----------------------------------------------------------------------------------------------------
@@ -88,7 +84,7 @@ int menu_admin() {
     printf("4. Consultar extrato de investidor\n");
     printf("5. Cadastrar nova criptomoeda\n");
     printf("6. Excluir criptomoeda\n");
-    printf("7. Atualizar cotações de criptomoedas\n");
+    printf("7. Atualizar cotacoes de criptomoedas\n");
     printf("8. Sair\n");
     
     while (estadomenu ==1) {  // Loop para escolha das opções, até que realiza saida (opcão = 8)
@@ -193,10 +189,72 @@ int cadastro_admin() {
     return 1;
 }
 
+
+//  ----------------------------------------------------------------------------------------------------
 void excluir_admin() {
-    printf("excluir investidor");
+    char cpf[12];
+    int encontrado = 0;
+
+    printf("-----------------------\nExcluir Investidor...\n-----------------------\n");
+    printf("Digite o CPF do investidor a ser excluido (somente numeros): ");
+    scanf("%s", cpf);
+
+    if (strlen(cpf) != 11) {
+        limparTela();
+        printf("O CPF deve conter 11 digitos!\n");
+        excluir_admin();
+        return;
+    }
+
+    for (int i = 1; i <= limite; i++) {
+        char nome_arquivo[30];
+        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+
+        if (file_exists(nome_arquivo)) {
+            FILE *fp = fopen(nome_arquivo, "rb");
+            if (!fp) {
+                printf("Erro ao abrir o arquivo %s.\n", nome_arquivo);
+                continue;
+            }
+
+            Usuario usuario;
+            fread(&usuario, sizeof(Usuario), 1, fp);
+            fclose(fp);
+
+            // verificacao
+            if (strcmp(usuario.cpf, cpf) == 0) {
+                encontrado = 1;
+                printf("\nDados do investidor encontrado:\n");
+                printf("CPF: %s\nSaldo: %d\nBitcoins: %.2f\nEthereum: %.2f\nRipple: %.2f\n", //printa informacoes do cpf
+                       usuario.cpf, usuario.saldo, usuario.bit, usuario.eth, usuario.rip);
+
+                char confirmacao;
+                printf("\nDeseja realmente excluir este investidor? (s/n): ");
+                scanf(" %c", &confirmacao);
+
+                if (confirmacao == 's' || confirmacao == 'S') {
+                    if (remove(nome_arquivo) == 0) {
+                        printf("\nInvestidor excluido com sucesso!\n");
+                    } else {
+                        printf("\nErro ao excluir o investidor.\n");
+                    }
+                } else {
+                    printf("\nExclusao cancelada.\n");
+                }
+                break;
+            }
+        }
+    }
+
+    if (!encontrado) {
+        printf("\nInvestidor com CPF %s nao encontrado.\n", cpf);
+    }
+
+    menu_admin();
 }
 
+
+//  ----------------------------------------------------------------------------------------------------
 void saldo_admin() {
     printf("consultar saldo");
 }
@@ -213,86 +271,83 @@ void excluir_cripto() {
     printf("excluir cripto");
 }
 
-void atualizar() {
-    printf("atualizar cotacao");
-}
 
-int novo_usuario(const char *cpf) {  // Verifica se usuario já existe ou não
-    for (int i = 1; i <= limite; i++) {
-        char nome_arquivo[30];
-        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+//int novo_usuario(const char *cpf) {  // Verifica se usuario já existe ou não
+//    for (int i = 1; i <= limite; i++) {
+//        char nome_arquivo[30];
+//        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+//
+//        // verifica arquivo
+//        if (file_exists(nome_arquivo)) {
+//            FILE *fp = fopen(nome_arquivo, "rb");
+//            if (!fp) {
+//                continue;
+//            }
 
-        // verifica arquivo
-        if (file_exists(nome_arquivo)) {
-            FILE *fp = fopen(nome_arquivo, "rb");
-            if (!fp) {
-                continue;
-            }
+//            Usuario usuario;
+//            fread(&usuario, sizeof(Usuario), 1, fp);
+ //           fclose(fp);
 
-            Usuario usuario;
-            fread(&usuario, sizeof(Usuario), 1, fp);
-            fclose(fp);
-
-            if (strcmp(usuario.cpf, cpf) == 0) {
-                    //printf("CPF encontrado\n");
-                    return 1;
-            }
-        }
-    }
+ //           if (strcmp(usuario.cpf, cpf) == 0) {
+ //                   //printf("CPF encontrado\n");
+ //                   return 1;
+ //           }
+  //      }
+ //   }
     //printf("CPF nao encontrado\n");
-    return 0;
-}
+  //  return 0;
+//}
 
 
 //  ----------------------------------------------------------------------------------------------------
-int conferir_usuario(const char *cpf, const char *senha) {  // Verifica se usuario no login está OK
-    for (int i = 1; i <= limite; i++) {
-        char nome_arquivo[30];
-        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
-
-        if (file_exists(nome_arquivo)) {
-            FILE *fp = fopen(nome_arquivo, "rb");
-            if (!fp) {
-                continue;
-            }
-
-            Usuario usuario;
-            fread(&usuario, sizeof(Usuario), 1, fp);
-            fclose(fp);
-
-            if (strcmp(usuario.cpf, cpf) == 0 && strcmp(usuario.senha, senha) == 0) {
-                return 1;  //CPF e senha encontrados
-              }
-        }
-    }
-    return 0; //CPF e senha não encontrados
-}
-
-
-//  ----------------------------------------------------------------------------------------------------
-int file_exists(const char *filename) {
-  FILE *file = fopen(filename, "rb");
-  if (file) {
-    fclose(file);
-    return 1;
-  }
-  return 0;
-}
+//int conferir_usuario(const char *cpf, const char *senha) {  // Verifica se usuario no login está OK
+//    for (int i = 1; i <= limite; i++) {
+//        char nome_arquivo[30];
+//        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+//
+//        if (file_exists(nome_arquivo)) {
+//            FILE *fp = fopen(nome_arquivo, "rb");
+//            if (!fp) {
+//                continue;
+//            }
+//
+//            Usuario usuario;
+//            fread(&usuario, sizeof(Usuario), 1, fp);
+//            fclose(fp);
+//
+//            if (strcmp(usuario.cpf, cpf) == 0 && strcmp(usuario.senha, senha) == 0) {
+//                return 1;  //CPF e senha encontrados
+//              }
+//        }
+//    }
+//    return 0; //CPF e senha não encontrados
+//}
 
 
 //  ----------------------------------------------------------------------------------------------------
-int contar_cadastros() {  // Verifica se atingiu limite de cadastros
-  int count = 0;
+//int file_exists(const char *filename) {
+//  FILE *file = fopen(filename, "rb");
+//  if (file) {
+//    fclose(file);
+//    return 1;
+//  }
+//  return 0;
+//}
 
-    for (int i = 1; i <= limite; i++) {
-        char nome_arquivo[30];
-        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
-        if (file_exists(nome_arquivo)) {
-            count++;
-        }
-    }
-    return count;
-}
+
+//  ----------------------------------------------------------------------------------------------------
+//int contar_cadastros() {  // Verifica se atingiu limite de cadastros
+//  int count = 0;
+//
+//    for (int i = 1; i <= limite; i++) {
+//        char nome_arquivo[30];
+//        snprintf(nome_arquivo, sizeof(nome_arquivo), "Usuario%d.bin", i);
+//        if (file_exists(nome_arquivo)) {
+//            count++;
+//        }
+//    }
+//    return count;
+//}
 
 
 //  ----------------------------------------------------------------------------------------------------
